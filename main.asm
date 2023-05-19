@@ -2,7 +2,10 @@ extern printf
 extern scanf
 
 section .data
-    menu db "----- Bem vindo à Cifra de César! -----", 0AH, "1) Criptografar", 0AH, "2) Descriptografar", 0AH, "3) Criptoanálise", 0AH, "4) Sair", 0AH, "Sua escolha: ", 0AH, 0H
+    menu db "----- Bem vindo à Cifra de César! -----", 0AH, "1) Criptografar", 0AH, "2) Descriptografar", 0AH, "3) Criptoanálise", 0AH, "4) Sair", 0AH, "Sua escolha: ", 0H
+    option dd 0
+
+    intFormat db "%d", 0H
     strFormat db "%s", 0H
 
 section .text
@@ -10,6 +13,7 @@ section .text
 
     main:
         call showMenu
+        call getOption
 
         ret
 
@@ -17,5 +21,12 @@ section .text
         mov rdi, strFormat
         mov rsi, menu
         call printf
+
+        ret
+
+    getOption:
+        mov rdi, intFormat
+        mov rsi, option
+        call scanf
 
         ret
