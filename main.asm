@@ -12,6 +12,7 @@ section .bss
 
 section .data
     askForKey db "Digite a chave de criptografia/descriptografia: ", 0H
+    decryptionSuccessMessage db "Concluído, sua mensagem está disponível em 'output.txt'.", 0AH, 0H
     enterFilename db "Digite o caminho/nome do arquivo de entrada: ", 0H
     encryptionSuccessMessage db "Concluído, sua mensagem encriptada está disponível em 'output.txt'.", 0AH, 0H
     errorMessage db "Houve um erro inesperado, tente novamente.", 0H
@@ -42,14 +43,11 @@ section .text
         mov eax, [option]
         cmp eax, "1"
             jl invalidOption
-            je encryptPath
-        cmp eax, "2"
-            je exit
-        cmp eax, "3"
-            je exit
         cmp eax, "4"
             je exit
             jg invalidOption
+
+        call endecodingPath
 
         call exit
 
@@ -82,7 +80,7 @@ section .text
 
         ret
 
-    encryptPath:
+    endecodingPath:
         mov rax, [sys_write]
         mov rdi, [stdout]
         mov rsi, enterFilename
@@ -104,7 +102,7 @@ section .text
         mov rsi, [read_only]
         syscall
 
-        mov r10, encryptPath
+        mov r10, endecodingPath
         cmp rax, 0 ; If errored (< 0)
         jl fileNotFound
 
@@ -135,7 +133,7 @@ section .text
         syscall
         mov [outputFileHandle], rax
 
-        call encryptLoop
+        call endecryptLoop
 
         mov rax, [sys_write]
         mov rdi, [stdout]
@@ -145,7 +143,7 @@ section .text
 
         call _start
 
-    encryptLoop:
+    endecryptLoop:
         ; Reading file
         mov rax, [sys_read]
         mov rdi, [fileHandle]
@@ -159,11 +157,11 @@ section .text
         push readBytes
         push fileBuffer
         cmp dword [readBytes], 0
-        jg encryptContent
+        jg endecryptContent
 
         ret
 
-    encryptContent:
+    endecryptContent:
         push rbp
         mov rbp, rsp
 
@@ -173,12 +171,17 @@ section .text
         mov r10, [rbp + 24]
 
         mov r11, 0 ; Zerando o contador
-        call encryptContentLoop
+        ; Ao mover o IF pra cá, evita dele realizar uma comparação para cada byte da mensagem
+        mov eax, [option]
+        cmp eax, "1"
+            je encryptContentLoop
+        cmp eax, "2"
+            je decryptContentLoop
 
         mov rsp, rbp
         pop rbp
 
-        call encryptLoop
+        call endecryptLoop
 
     encryptContentLoop:
         ; movzx ebx, byte [r11]
@@ -201,6 +204,28 @@ section .text
         inc r11
 
         jmp encryptContentLoop
+
+    decryptContentLoop:
+        ; movzx ebx, byte [r11]
+        movzx rsi, byte [r8 + r11]
+
+        cmp r11, r9 ; Se o contador for igual à quantidade de bytes lidos
+        je return
+
+        ; movzx eax, byte [r10] ; Carrega a chave secreta para um registrador de 32-bits
+
+        ; Este diabo não está funcionando, era pra adicionar a chave ao caractere e colocar ele no arquivo, mas ?????
+        ; Tentando fazer essa soma eu até quebrei o resto do código e nem escreve no arquivo de saída mais
+        sub esi, dword [r10]
+
+        mov rax, [sys_write]
+        mov rdi, [outputFileHandle]
+        mov rdx, 1
+        syscall
+
+        inc r11
+
+        jmp decryptContentLoop
 
     closeFile:
         mov rax, [sys_close]
