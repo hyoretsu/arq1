@@ -3,7 +3,7 @@ global _start
 section .bss
     fileBuffer resd 513
     fileHandle resd 1
-    filename resb 4096 ; Max path size in Linux
+    filename resb 4096 ; 4096 = max path size in Linux
     inputLength resd 1
     option resd 1
     outputFileHandle resd 1
@@ -123,9 +123,6 @@ section .text
 
         mov byte [secretKey + rax - 1], 0H ; Remove newline to avoid errors
 
-        ; cmp rax, 3
-        ; je cleanBuffer
-
         ; Create output file
         mov rax, [sys_creat]
         mov rdi, outputFilename
@@ -184,7 +181,6 @@ section .text
         call endecryptLoop
 
     encryptContentLoop:
-        ; movzx ebx, byte [r11]
         movzx rsi, byte [r8 + r11]
 
         cmp r11, r9 ; Se o contador for igual à quantidade de bytes lidos
@@ -206,7 +202,6 @@ section .text
         jmp encryptContentLoop
 
     decryptContentLoop:
-        ; movzx ebx, byte [r11]
         movzx rsi, byte [r8 + r11]
 
         cmp r11, r9 ; Se o contador for igual à quantidade de bytes lidos
